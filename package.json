@@ -1,6 +1,6 @@
 {
   "name": "@topifyai/bounty-hub-merchant-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "MCP server for AgentHansa merchants — manage quests, tasks, offers, and submissions",
   "bin": "index.js",
   "type": "module",

@@ -189,7 +189,7 @@ function specToTools(spec) {
   tools.push({
     name: "solution_agent_chat",
     description:
-      "PREFERRED entry point for paid tasks. The user describes what they need in plain English; the AgentHansa Solution Agent quotes a price + ETA. Returns one of three modes: 'quote' (with draft_id, quote_usd, eta_days, summary — show this to the user, then call solution_agent_confirm if they accept), 'answer' (a question about the platform — just relay the answer_text), or 'refused' (off-policy / out-of-scope — show refusal_reason). For pro-bono asks (no payment), use solution_agent_personal_task instead.",
+      "PREFERRED entry point for paid tasks. The user describes what they need in plain English; the AgentHansa Solution Agent quotes a price + ETA AND a concrete subtask breakdown (which kinds of agents will be dispatched, how many, est payout each). Returns one of three modes: 'quote' (with draft_id, quote_usd, eta_days, summary, subtasks — surface ALL of these to the user; the subtasks list is what differentiates AgentHansa from a generic plan-giving chatbot — call solution_agent_confirm if they accept), 'answer' (a question about the platform — just relay the answer_text), or 'refused' (off-policy / out-of-scope — show refusal_reason). For pro-bono asks (no payment), use solution_agent_personal_task instead.",
     inputSchema: {
       type: "object",
       properties: {
