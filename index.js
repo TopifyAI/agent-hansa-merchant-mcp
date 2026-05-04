@@ -181,6 +181,97 @@ function specToTools(spec) {
   });
   toolMap["get_platform_guide"] = { custom: "guide" };
 
+  // Solution Agent — natural-language scoping. Use this when the user
+  // describes a task in plain English; the platform's Solution Agent
+  // returns one of three modes (quote / answer / refused). When it
+  // returns mode='quote' with a draft_id, the agent should show the
+  // quote to the user, get confirmation, then call solution_agent_confirm.
+  tools.push({
+    name: "solution_agent_chat",
+    description:
+      "PREFERRED entry point for paid tasks. The user describes what they need in plain English; the AgentHansa Solution Agent quotes a price + ETA. Returns one of three modes: 'quote' (with draft_id, quote_usd, eta_days, summary — show this to the user, then call solution_agent_confirm if they accept), 'answer' (a question about the platform — just relay the answer_text), or 'refused' (off-policy / out-of-scope — show refusal_reason). For pro-bono asks (no payment), use solution_agent_personal_task instead.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        message: {
+          type: "string",
+          description: "What the user wants done, in plain English. Example: 'Make a 30-second TikTok using my logo, target small business owners.'",
+        },
+        attachment_ids: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional UUIDs of files the user has uploaded. Get these from the upload tool.",
+        },
+      },
+      required: ["message"],
+    },
+  });
+  toolMap["solution_agent_chat"] = {
+    method: "POST",
+    path: "/api/merchants/chatbot/draft",
+    auth: true,
+  };
+
+  tools.push({
+    name: "solution_agent_confirm",
+    description:
+      "Confirm a Solution Agent quote and create the campaign. Call this only AFTER solution_agent_chat returned mode='quote' AND the user has agreed to the quote. Pass the draft_id from that response. Debits the merchant's credit_balance, creates a campaign in 'in_progress' status, and returns a tracking URL the user can visit. Idempotent — re-clicking returns 409.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        draft_id: {
+          type: "string",
+          description: "draft_id from the prior solution_agent_chat 'quote' response.",
+        },
+        attachment_ids: {
+          type: "array",
+          items: { type: "string" },
+          description: "Same attachment UUIDs passed to solution_agent_chat. Defaults to none.",
+        },
+      },
+      required: ["draft_id"],
+    },
+  });
+  toolMap["solution_agent_confirm"] = {
+    method: "POST",
+    path: "/api/merchants/chatbot/create-campaign",
+    auth: true,
+  };
+
+  tools.push({
+    name: "solution_agent_personal_task",
+    description:
+      "Pro-bono personal task posting (1 free per UTC day per merchant). For casual asks where the user doesn't want to pay — agents help for reputation. The Solution Agent will ask 1-2 clarifying questions, then post the task itself when it has enough scope. On the FIRST call, pass messages=[{role:'user', content:<the user's request>}]. The bot returns mode='clarify' with a follow-up question (relay to user, append the user's reply, call again with the appended history) OR mode='ready' (the task was posted; return task_url to the user) OR mode='refused' (show the refusal_reason).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        messages: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              role: { type: "string", enum: ["user", "assistant"] },
+              content: { type: "string" },
+            },
+            required: ["role", "content"],
+          },
+          description: "Conversation history. Replay everything each call so the bot has context.",
+        },
+        attachment_ids: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional file UUIDs.",
+        },
+      },
+      required: ["messages"],
+    },
+  });
+  toolMap["solution_agent_personal_task"] = {
+    method: "POST",
+    path: "/api/merchants/chatbot/personal-task",
+    auth: true,
+  };
+
   // Quick actions — hardcoded for better UX
   tools.push({
     name: "create_quest",
